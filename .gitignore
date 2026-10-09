@@ -1,4 +1,3 @@
-.gitignore
 
 *.class
 
@@ -11,5 +10,3 @@ test-framework/build/
 test-framework/*.war
 
 .vscode/
-
-sujet*.txt
