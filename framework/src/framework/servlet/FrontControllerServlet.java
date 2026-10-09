@@ -3,6 +3,8 @@ package framework.servlet;
 import framework.annotation.Mapping;
 import framework.scanner.ControllerScanner;
 import framework.utils.RouteInfo;
+import framework.web.ModelAndView;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,16 +36,16 @@ public class FrontControllerServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         processController(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         processController(request, response);
     }
 
-    private void processController(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void processController(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         response.setContentType("text/plain;charset=UTF-8");
         var writer = response.getWriter();
 
@@ -64,6 +66,14 @@ public class FrontControllerServlet extends HttpServlet {
             try {
                 Object instance = matchedController.getDeclaredConstructor().newInstance();
                 Object result = matchedMethod.invoke(instance);
+                if (result instanceof ModelAndView) {
+                    ModelAndView mv = (ModelAndView) result;
+                    for (Map.Entry<String, Object> entry : mv.getAttributes().entrySet()) {
+                        request.setAttribute(entry.getKey(), entry.getValue());
+                    }
+                    request.getRequestDispatcher(mv.getUrl()).forward(request, response);
+                    return;
+                }
                 if (result instanceof String) {
                     writer.println((String) result);
                 } else if (result != null) {
