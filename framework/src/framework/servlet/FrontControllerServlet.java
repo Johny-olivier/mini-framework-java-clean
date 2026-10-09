@@ -99,7 +99,8 @@ public class FrontControllerServlet extends HttpServlet {
                     writer.println(result.toString());
                 }
             } catch (Exception e) {
-                throw new RuntimeException("Erreur appel " + matchedMethod.getName(), e);
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur appel " + matchedMethod.getName());
+                return;
             }
         } else {
             boolean urlExiste = false;
@@ -110,10 +111,12 @@ public class FrontControllerServlet extends HttpServlet {
                 }
             }
             if (urlExiste) {
+                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 writer.println("Verbe HTTP non accepte pour " + path + ".");
                 writer.println("Utilisez un autre verbe.");
                 return;
             }
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             writer.println("Aucune méthode ne correspond.");
             writer.println();
             writer.println("Controllers détectés :");
