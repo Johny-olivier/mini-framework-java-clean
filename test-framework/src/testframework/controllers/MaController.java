@@ -17,6 +17,11 @@ public class MaController {
         return "Page login";
     }
 
+    @Mapping(url = "/login", method = "POST")
+    public String checkLogin() {
+        return "Connexion ok";
+    }
+
     @Mapping(url = "/bienvenue")
     public ModelAndView bienvenue() {
         ModelAndView mv = new ModelAndView("bienvenue");
