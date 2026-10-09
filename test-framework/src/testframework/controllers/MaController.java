@@ -2,6 +2,7 @@ package testframework.controllers;
 
 import framework.annotation.Controller;
 import framework.annotation.Mapping;
+import framework.annotation.Param;
 import framework.annotation.ResponseBody;
 import framework.web.ModelAndView;
 import java.util.HashMap;
@@ -39,6 +40,11 @@ public class MaController {
         user.put("nom", "Rakoto");
         user.put("age", 20);
         return user;
+    }
+
+    @Mapping(url = "/cherche")
+    public String cherche(@Param("q") String q, @Param("page") int page) {
+        return "Recherche " + q + " page " + page;
     }
 
 }
