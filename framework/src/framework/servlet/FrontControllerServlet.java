@@ -18,12 +18,22 @@ public class FrontControllerServlet extends HttpServlet {
 
     private List<Class<?>> controllers;
     private Map<String, RouteInfo> routes;
+    private String viewPrefix = "";
+    private String viewSuffix = "";
 
     @Override
     public void init() {
         String classesPath = getServletContext().getRealPath("/WEB-INF/classes");
         String controllerPackage = getServletConfig().getInitParameter("controller-package");
         controllers = ControllerScanner.scan(classesPath, controllerPackage);
+        String prefix = getServletConfig().getInitParameter("view-prefix");
+        String suffix = getServletConfig().getInitParameter("view-suffix");
+        if (prefix != null) {
+            viewPrefix = prefix;
+        }
+        if (suffix != null) {
+            viewSuffix = suffix;
+        }
         routes = new HashMap<>();
         for (Class<?> controller : controllers) {
             for (Method method : controller.getDeclaredMethods()) {
@@ -71,7 +81,7 @@ public class FrontControllerServlet extends HttpServlet {
                     for (Map.Entry<String, Object> entry : mv.getAttributes().entrySet()) {
                         request.setAttribute(entry.getKey(), entry.getValue());
                     }
-                    request.getRequestDispatcher(mv.getUrl()).forward(request, response);
+                    request.getRequestDispatcher(viewPrefix + mv.getUrl() + viewSuffix).forward(request, response);
                     return;
                 }
                 if (result instanceof String) {
