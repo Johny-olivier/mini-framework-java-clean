@@ -2,7 +2,10 @@ package testframework.controllers;
 
 import framework.annotation.Controller;
 import framework.annotation.Mapping;
+import framework.annotation.ResponseBody;
 import framework.web.ModelAndView;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 public class MaController {
@@ -27,6 +30,15 @@ public class MaController {
         ModelAndView mv = new ModelAndView("bienvenue");
         mv.addAttribute("nom", "Rakoto");
         return mv;
+    }
+
+    @Mapping(url = "/api/users")
+    @ResponseBody
+    public Map<String, Object> apiUsers() {
+        Map<String, Object> user = new HashMap<>();
+        user.put("nom", "Rakoto");
+        user.put("age", 20);
+        return user;
     }
 
 }

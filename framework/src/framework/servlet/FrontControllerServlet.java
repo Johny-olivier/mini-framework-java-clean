@@ -1,7 +1,9 @@
 package framework.servlet;
 
 import framework.annotation.Mapping;
+import framework.annotation.ResponseBody;
 import framework.scanner.ControllerScanner;
+import framework.utils.FrameworkUtils;
 import framework.utils.RouteInfo;
 import framework.web.ModelAndView;
 import jakarta.servlet.ServletException;
@@ -76,6 +78,11 @@ public class FrontControllerServlet extends HttpServlet {
             try {
                 Object instance = matchedController.getDeclaredConstructor().newInstance();
                 Object result = matchedMethod.invoke(instance);
+                if (matchedMethod.isAnnotationPresent(ResponseBody.class)) {
+                    response.setContentType("application/json;charset=UTF-8");
+                    writer.println(FrameworkUtils.toJson(result));
+                    return;
+                }
                 if (result instanceof ModelAndView) {
                     ModelAndView mv = (ModelAndView) result;
                     for (Map.Entry<String, Object> entry : mv.getAttributes().entrySet()) {
