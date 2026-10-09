@@ -2,22 +2,35 @@ package framework.servlet;
 
 import framework.annotation.Mapping;
 import framework.scanner.ControllerScanner;
+import framework.utils.RouteInfo;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FrontControllerServlet extends HttpServlet {
 
     private List<Class<?>> controllers;
+    private Map<String, RouteInfo> routes;
 
     @Override
     public void init() {
         String classesPath = getServletContext().getRealPath("/WEB-INF/classes");
         String controllerPackage = getServletConfig().getInitParameter("controller-package");
         controllers = ControllerScanner.scan(classesPath, controllerPackage);
+        routes = new HashMap<>();
+        for (Class<?> controller : controllers) {
+            for (Method method : controller.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Mapping.class)) {
+                    String url = method.getAnnotation(Mapping.class).url();
+                    routes.put(url, new RouteInfo(controller, method));
+                }
+            }
+        }
     }
 
     @Override
@@ -41,18 +54,10 @@ public class FrontControllerServlet extends HttpServlet {
         Class<?> matchedController = null;
         Method matchedMethod = null;
 
-        outer:
-        for (Class<?> controller : controllers) {
-            for (Method method : controller.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Mapping.class)) {
-                    String url = method.getAnnotation(Mapping.class).url();
-                    if (url.equals(path)) {
-                        matchedController = controller;
-                        matchedMethod = method;
-                        break outer;
-                    }
-                }
-            }
+        RouteInfo route = routes.get(path);
+        if (route != null) {
+            matchedController = route.getController();
+            matchedMethod = route.getMethod();
         }
 
         if (matchedMethod != null) {
@@ -73,14 +78,10 @@ public class FrontControllerServlet extends HttpServlet {
             writer.println("Controllers détectés :");
             writer.println();
 
-            for (Class<?> controller : controllers) {
-                writer.println(controller.getSimpleName());
-                for (Method method : controller.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Mapping.class)) {
-                        String url = method.getAnnotation(Mapping.class).url();
-                        writer.println("    - " + url + "  -> " + method.getName() + "()");
-                    }
-                }
+            for (Map.Entry<String, RouteInfo> entry : routes.entrySet()) {
+                RouteInfo info = entry.getValue();
+                writer.println(info.getController().getSimpleName());
+                writer.println("    - " + entry.getKey() + "  -> " + info.getMethod().getName() + "()");
             }
         }
     }
