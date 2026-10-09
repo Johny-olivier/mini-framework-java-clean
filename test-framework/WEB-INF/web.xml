@@ -21,6 +21,16 @@
         </param-value>
     </init-param>
 
+        <init-param>
+            <param-name>view-prefix</param-name>
+            <param-value>/views/</param-value>
+        </init-param>
+
+        <init-param>
+            <param-name>view-suffix</param-name>
+            <param-value>.jsp</param-value>
+        </init-param>
+
     </servlet>
 
     <servlet-mapping>

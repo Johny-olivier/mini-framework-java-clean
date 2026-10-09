@@ -19,7 +19,7 @@ public class MaController {
 
     @Mapping(url = "/bienvenue")
     public ModelAndView bienvenue() {
-        ModelAndView mv = new ModelAndView("/views/bienvenue.jsp");
+        ModelAndView mv = new ModelAndView("bienvenue");
         mv.addAttribute("nom", "Rakoto");
         return mv;
     }
