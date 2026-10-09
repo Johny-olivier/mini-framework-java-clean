@@ -7,13 +7,13 @@ import framework.annotation.Mapping;
 public class MaController {
 
     @Mapping(url = "/users")
-    public void listUsers() {
-
+    public String listUsers() {
+        return "Liste des users";
     }
 
     @Mapping(url = "/login")
-    public void login() {
-
+    public String login() {
+        return "Page login";
     }
 
 }

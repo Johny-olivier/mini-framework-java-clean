@@ -56,11 +56,17 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         if (matchedMethod != null) {
-            writer.println("Controller trouvé :");
-            writer.println(matchedController.getSimpleName());
-            writer.println();
-            writer.println("Méthode à appeler :");
-            writer.println(matchedMethod.getName() + "()");
+            try {
+                Object instance = matchedController.getDeclaredConstructor().newInstance();
+                Object result = matchedMethod.invoke(instance);
+                if (result instanceof String) {
+                    writer.println((String) result);
+                } else if (result != null) {
+                    writer.println(result.toString());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur appel " + matchedMethod.getName(), e);
+            }
         } else {
             writer.println("Aucune méthode ne correspond.");
             writer.println();
