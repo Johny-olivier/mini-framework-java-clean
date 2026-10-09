@@ -1,0 +1,15 @@
+.gitignore
+
+*.class
+
+/build/
+
+framework/build/
+framework/framework.jar
+
+test-framework/build/
+test-framework/*.war
+
+.vscode/
+
+sujet*.txt
