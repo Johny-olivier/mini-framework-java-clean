@@ -6,3 +6,5 @@ javac \
     @sources.txt
 
 rm sources.txt
+
+cd build && jar -cf ../framework.jar framework/ && cd ..

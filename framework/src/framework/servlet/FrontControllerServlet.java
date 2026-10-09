@@ -1,10 +1,12 @@
 package framework.servlet;
 
+import framework.annotation.Mapping;
 import framework.scanner.ControllerScanner;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class FrontControllerServlet extends HttpServlet {
@@ -31,8 +33,49 @@ public class FrontControllerServlet extends HttpServlet {
     private void processController(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("text/plain;charset=UTF-8");
         var writer = response.getWriter();
-        writer.println("URL : " + request.getRequestURI());
-        writer.println("Méthode : " + request.getMethod());
-        writer.println("Controllers : " + controllers.toString());
+
+        String requestUri = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = requestUri.substring(contextPath.length());
+
+        Class<?> matchedController = null;
+        Method matchedMethod = null;
+
+        outer:
+        for (Class<?> controller : controllers) {
+            for (Method method : controller.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Mapping.class)) {
+                    String url = method.getAnnotation(Mapping.class).url();
+                    if (url.equals(path)) {
+                        matchedController = controller;
+                        matchedMethod = method;
+                        break outer;
+                    }
+                }
+            }
+        }
+
+        if (matchedMethod != null) {
+            writer.println("Controller trouvé :");
+            writer.println(matchedController.getSimpleName());
+            writer.println();
+            writer.println("Méthode à appeler :");
+            writer.println(matchedMethod.getName() + "()");
+        } else {
+            writer.println("Aucune méthode ne correspond.");
+            writer.println();
+            writer.println("Controllers détectés :");
+            writer.println();
+
+            for (Class<?> controller : controllers) {
+                writer.println(controller.getSimpleName());
+                for (Method method : controller.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(Mapping.class)) {
+                        String url = method.getAnnotation(Mapping.class).url();
+                        writer.println("    - " + url + "  -> " + method.getName() + "()");
+                    }
+                }
+            }
+        }
     }
 }
