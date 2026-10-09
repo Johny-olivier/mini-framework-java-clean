@@ -1,5 +1,8 @@
-javac -cp lib/servlet-api.jar \
-      -d build \
-      src/framework/servlet/*.java
+find src -name "*.java" > sources.txt
 
-jar cf framework.jar -C build .
+javac \
+    -cp lib/servlet-api.jar \
+    -d build \
+    @sources.txt
+
+rm sources.txt

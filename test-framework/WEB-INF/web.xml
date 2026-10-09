@@ -8,7 +8,19 @@
 
     <servlet>
         <servlet-name>FrontController</servlet-name>
-        <servlet-class>framework.servlet.FrontControllerServlet</servlet-class>
+
+        <servlet-class>
+            framework.servlet.FrontControllerServlet
+        </servlet-class>
+
+        <init-param>
+        <param-name>controller-package</param-name>
+        <param-value>
+            testframework.controllers,
+            testframework.api.controllers
+        </param-value>
+    </init-param>
+
     </servlet>
 
     <servlet-mapping>
