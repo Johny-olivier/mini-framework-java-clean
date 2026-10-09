@@ -1,6 +1,7 @@
 package framework.servlet;
 
 import framework.annotation.Mapping;
+import framework.annotation.Param;
 import framework.annotation.ResponseBody;
 import framework.scanner.ControllerScanner;
 import framework.utils.FrameworkUtils;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +79,7 @@ public class FrontControllerServlet extends HttpServlet {
         if (matchedMethod != null) {
             try {
                 Object instance = matchedController.getDeclaredConstructor().newInstance();
-                Object result = matchedMethod.invoke(instance);
+                Object result = matchedMethod.invoke(instance, buildArgs(matchedMethod, request));
                 if (matchedMethod.isAnnotationPresent(ResponseBody.class)) {
                     response.setContentType("application/json;charset=UTF-8");
                     writer.println(FrameworkUtils.toJson(result));
@@ -123,5 +125,38 @@ public class FrontControllerServlet extends HttpServlet {
                 writer.println("    - " + entry.getKey() + "  -> " + info.getMethod().getName() + "()");
             }
         }
+    }
+
+    private Object[] buildArgs(Method method, HttpServletRequest request) {
+        Parameter[] params = method.getParameters();
+        Object[] args = new Object[params.length];
+        for (int i = 0; i < params.length; i++) {
+            Param param = params[i].getAnnotation(Param.class);
+            String name = params[i].getName();
+            if (param != null) {
+                name = param.value();
+            }
+            args[i] = convert(request.getParameter(name), params[i].getType());
+        }
+        return args;
+    }
+
+    private Object convert(String value, Class<?> type) {
+        if (type == String.class) {
+            return value;
+        }
+        if (type == int.class || type == Integer.class) {
+            return value == null ? 0 : Integer.parseInt(value);
+        }
+        if (type == long.class || type == Long.class) {
+            return value == null ? 0L : Long.parseLong(value);
+        }
+        if (type == double.class || type == Double.class) {
+            return value == null ? 0.0 : Double.parseDouble(value);
+        }
+        if (type == boolean.class || type == Boolean.class) {
+            return value != null && Boolean.parseBoolean(value);
+        }
+        return value;
     }
 }
