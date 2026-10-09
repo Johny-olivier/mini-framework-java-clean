@@ -7,13 +7,13 @@ import framework.annotation.Mapping;
 public class MaDeuxiemeController {
 
     @Mapping(url = "/")
-    public void index() {
-
+    public String index() {
+        return "Accueil";
     }
 
     @Mapping(url = "/about")
-    public void about() {
-
+    public String about() {
+        return "Page about";
     }
 
 }
