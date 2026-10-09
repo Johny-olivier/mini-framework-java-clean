@@ -38,8 +38,8 @@ public class FrontControllerServlet extends HttpServlet {
         for (Class<?> controller : controllers) {
             for (Method method : controller.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Mapping.class)) {
-                    String url = method.getAnnotation(Mapping.class).url();
-                    routes.put(url, new RouteInfo(controller, method));
+                    Mapping mapping = method.getAnnotation(Mapping.class);
+                    routes.put(mapping.method() + ":" + mapping.url(), new RouteInfo(controller, method));
                 }
             }
         }
@@ -66,7 +66,7 @@ public class FrontControllerServlet extends HttpServlet {
         Class<?> matchedController = null;
         Method matchedMethod = null;
 
-        RouteInfo route = routes.get(path);
+        RouteInfo route = routes.get(request.getMethod() + ":" + path);
         if (route != null) {
             matchedController = route.getController();
             matchedMethod = route.getMethod();
@@ -93,6 +93,18 @@ public class FrontControllerServlet extends HttpServlet {
                 throw new RuntimeException("Erreur appel " + matchedMethod.getName(), e);
             }
         } else {
+            boolean urlExiste = false;
+            for (String key : routes.keySet()) {
+                if (key.endsWith(":" + path)) {
+                    urlExiste = true;
+                    break;
+                }
+            }
+            if (urlExiste) {
+                writer.println("Verbe HTTP non accepte pour " + path + ".");
+                writer.println("Utilisez un autre verbe.");
+                return;
+            }
             writer.println("Aucune méthode ne correspond.");
             writer.println();
             writer.println("Controllers détectés :");
