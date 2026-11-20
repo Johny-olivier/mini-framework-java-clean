@@ -47,6 +47,15 @@ contient() {
     [[ "$corps" == *"$attendu"* ]] && echo 1 || echo 0
 }
 
+contient_formulaire() {
+    local url="$1"
+    local attendu="$2"
+    shift 2
+    local corps
+    corps="$(curl -s "$@" "$url")"
+    [[ "$corps" == *"$attendu"* ]] && echo 1 || echo 0
+}
+
 arreter_tomcat() {
     if [ -f "$BASE/logs/catalina.out" ]; then
         CATALINA_HOME="$CATALINA_HOME" CATALINA_BASE="$BASE" \
@@ -119,6 +128,47 @@ if [ "$pret" = "1" ]; then
         "$(contient "$URL/cherche?q=livre&page=2" "Recherche livre page 2")"
     verifier "GET /cherche refuse une page non numérique" \
         "$([ "$(code_http "$URL/cherche?q=livre&page=abc")" = "400" ] && echo 1 || echo 0)"
+
+    echo
+    echo "== Binding objet =="
+    verifier "GET /employe affiche le formulaire" "$(contient "$URL/employe" "Nouvel employé")"
+    verifier "POST /employe remplit le nom" \
+        "$(contient_formulaire "$URL/employe" "Johny" -X POST \
+            --data-urlencode "nom=Johny" \
+            --data-urlencode "poste=Developpeur" \
+            --data-urlencode "salaire=1234.5" \
+            --data-urlencode "actif=true" \
+            --data-urlencode "adresse.rue=Lalana" \
+            --data-urlencode "adresse.ville=Antananarivo")"
+    verifier "POST /employe remplit le poste" \
+        "$(contient_formulaire "$URL/employe" "Developpeur" -X POST \
+            --data-urlencode "nom=Johny" --data-urlencode "poste=Developpeur")"
+    verifier "POST /employe remplit le salaire" \
+        "$(contient_formulaire "$URL/employe" "1234.5" -X POST \
+            --data-urlencode "nom=Johny" --data-urlencode "salaire=1234.5")"
+    verifier "POST /employe remplit le booléen" \
+        "$(contient_formulaire "$URL/employe" ">oui<" -X POST \
+            --data-urlencode "nom=Johny" --data-urlencode "actif=true")"
+    verifier "POST /employe remplit l'objet imbriqué" \
+        "$(contient_formulaire "$URL/employe" "Antananarivo" -X POST \
+            --data-urlencode "nom=Johny" \
+            --data-urlencode "adresse.rue=Lalana" \
+            --data-urlencode "adresse.ville=Antananarivo")"
+    verifier "POST /api/employe renvoie l'objet en JSON" \
+        "$(contient_formulaire "$URL/api/employe" "\"nom\":\"Johny\"" -X POST \
+            --data-urlencode "nom=Johny" \
+            --data-urlencode "poste=Developpeur" \
+            --data-urlencode "salaire=1234.5" \
+            --data-urlencode "actif=true" \
+            --data-urlencode "adresse.rue=Lalana" \
+            --data-urlencode "adresse.ville=Antananarivo")"
+    verifier "POST /api/employe sérialise l'objet imbriqué" \
+        "$(contient_formulaire "$URL/api/employe" "\"rue\":\"Lalana\"" -X POST \
+            --data-urlencode "nom=Johny" \
+            --data-urlencode "adresse.rue=Lalana" \
+            --data-urlencode "adresse.ville=Antananarivo")"
+    verifier "POST /api/employe refuse un salaire invalide" \
+        "$([ "$(code_http -X POST --data-urlencode "salaire=abc" "$URL/api/employe")" = "400" ] && echo 1 || echo 0)"
 
     echo
     echo "== Démarrage =="
