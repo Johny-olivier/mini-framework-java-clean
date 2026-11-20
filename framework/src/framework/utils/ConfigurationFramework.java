@@ -17,6 +17,12 @@ public final class ConfigurationFramework {
     public static final String SUFFIXE_VUES = "view-suffix";
     public static final String NOM_SERVLET = "FrontController";
 
+    /** Attribut publié par le framework pour les contrôleurs. */
+    public static final String CONTEXTE_SPRING = "springContext";
+
+    /** Clé sous laquelle Spring publie son contexte racine. */
+    public static final String RACINE_SPRING = "org.springframework.web.context.WebApplicationContext.ROOT";
+
     private ConfigurationFramework() {
     }
 

@@ -47,10 +47,20 @@ public class InitialiseurApplication implements ServletContextListener {
         RegistreRoutes registre = new RegistreRoutes();
         registre.enregistrerTout(controleurs);
 
+        // Sprint 5bis : Spring reste optionnel. Si un ContextLoaderListener a
+        // déjà publié son contexte racine, on le republie sous un nom stable
+        // pour les contrôleurs. Sinon l'attribut vaut null et le framework
+        // continue de fonctionner sans Spring.
+        contexte.setAttribute(ConfigurationFramework.CONTEXTE_SPRING,
+                contexte.getAttribute(ConfigurationFramework.RACINE_SPRING));
+
         contexte.setAttribute(ATTRIBUT_CONTROLEURS, controleurs);
         contexte.setAttribute(ATTRIBUT_ROUTES, registre);
         contexte.log("Framework : " + controleurs.size() + " contrôleur(s) et "
-                + registre.taille() + " route(s) initialisés au démarrage.");
+                + registre.taille() + " route(s) initialisés au démarrage."
+                + (contexte.getAttribute(ConfigurationFramework.CONTEXTE_SPRING) == null
+                        ? " Aucun contexte Spring détecté."
+                        : " Contexte Spring publié sous '" + ConfigurationFramework.CONTEXTE_SPRING + "'."));
         return registre;
     }
 }

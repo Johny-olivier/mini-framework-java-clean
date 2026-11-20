@@ -12,6 +12,7 @@ framework/framework.jar
 test-framework/build/
 test-framework/*.war
 test-framework/WEB-INF/lib/framework.jar
+test-framework/WEB-INF/lib/spring-*.jar
 
 .vscode/
 

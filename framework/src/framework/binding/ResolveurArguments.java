@@ -1,6 +1,7 @@
 package framework.binding;
 
 import framework.annotation.Param;
+import framework.utils.ConfigurationFramework;
 import jakarta.servlet.http.HttpServletRequest;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -28,6 +29,10 @@ public class ResolveurArguments {
 
     private static final int PROFONDEUR_MAX = 5;
 
+    private static final Set<String> TYPES_CONTEXTE_SPRING = Set.of(
+            "org.springframework.context.ApplicationContext",
+            "org.springframework.web.context.WebApplicationContext");
+
     public Object[] resoudre(Method methode, HttpServletRequest requete) {
         Parameter[] parametres = methode.getParameters();
         Object[] arguments = new Object[parametres.length];
@@ -45,6 +50,9 @@ public class ResolveurArguments {
         String nom = annotation != null ? annotation.value() : parametre.getName();
         Class<?> type = parametre.getType();
 
+        if (TYPES_CONTEXTE_SPRING.contains(type.getName())) {
+            return contexteSpring(requete, type);
+        }
         if (type.isArray() || Iterable.class.isAssignableFrom(type)) {
             throw new IllegalStateException(
                     "Type de paramètre non pris en charge pour " + nom + " : " + type.getName());
@@ -77,6 +85,25 @@ public class ResolveurArguments {
             }
         }
         return total;
+    }
+
+    /**
+     * Sprint 5bis : injection du conteneur Spring, sans dépendance de
+     * compilation du framework envers Spring. Le type est reconnu par son nom.
+     */
+    private Object contexteSpring(HttpServletRequest requete, Class<?> type) {
+        Object contexte = requete.getServletContext()
+                .getAttribute(ConfigurationFramework.CONTEXTE_SPRING);
+        if (contexte == null) {
+            throw new IllegalStateException(
+                    "Le paramètre " + type.getName() + " exige un contexte Spring, mais aucun contexte "
+                    + "n'est disponible. Déclarez ContextLoaderListener avant InitialiseurApplication dans web.xml.");
+        }
+        if (!type.isInstance(contexte)) {
+            throw new IllegalStateException(
+                    "Le contexte Spring publié n'est pas de type " + type.getName() + ".");
+        }
+        return type.cast(contexte);
     }
 
     private Object instancier(Class<?> type) {
