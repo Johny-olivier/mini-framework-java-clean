@@ -242,6 +242,38 @@ if [ "$pret" = "1" ]; then
         "$(contient_cookie "$URL/compteur" "Compteur : 1" "$COOKIES")"
 
     echo
+    echo "== Authentification (sprint 10) =="
+    COOKIES_AUTH="$TRAVAIL/auth-cookies.txt"
+    rm -f "$COOKIES_AUTH"
+    verifier "route publique accessible" \
+        "$([ "$(code_http "$URL/public")" = "200" ] && echo 1 || echo 0)"
+    verifier "route privée sans session renvoie 401" \
+        "$([ "$(code_http "$URL/prive")" = "401" ] && echo 1 || echo 0)"
+    verifier "route privée API sans session renvoie 401" \
+        "$([ "$(code_http "$URL/api/prive")" = "401" ] && echo 1 || echo 0)"
+    verifier "route privée API sans session renvoie du JSON" \
+        "$(condition bash -c "curl -s '$URL/api/prive' | grep -q 'Authentification requise'")"
+
+    curl -s -c "$COOKIES_AUTH" -b "$COOKIES_AUTH" "$URL/auth/login?role=user" >/dev/null
+    verifier "route privée avec session renvoie 200" \
+        "$([ "$(code_http -b "$COOKIES_AUTH" "$URL/prive")" = "200" ] && echo 1 || echo 0)"
+    verifier "route privée avec session contient le contenu" \
+        "$(contient_cookie "$URL/prive" "Page privée" "$COOKIES_AUTH")"
+
+    if [ "$(code_http -b "$COOKIES_AUTH" "$URL/admin")" = "403" ]; then
+        verifier "route admin avec rôle user renvoie 403" "1"
+    else
+        verifier "route admin avec rôle user renvoie 403" "0"
+    fi
+
+    rm -f "$COOKIES_AUTH"
+    curl -s -c "$COOKIES_AUTH" -b "$COOKIES_AUTH" "$URL/auth/login?role=admin" >/dev/null
+    verifier "route admin avec rôle admin renvoie 200" \
+        "$([ "$(code_http -b "$COOKIES_AUTH" "$URL/admin")" = "200" ] && echo 1 || echo 0)"
+    verifier "route admin avec rôle admin contient le contenu" \
+        "$(contient_cookie "$URL/admin" "Page admin" "$COOKIES_AUTH")"
+
+    echo
     echo "== Démarrage =="
     verifier "le listener a initialisé les routes" \
         "$(condition grep -rq 'route(s) initialisés au démarrage' "$BASE/logs")"

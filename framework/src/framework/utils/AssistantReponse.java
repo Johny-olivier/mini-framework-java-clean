@@ -50,4 +50,32 @@ public final class AssistantReponse {
         reponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         ecrireTexte(reponse, "Erreur interne lors du traitement de la requête.");
     }
+
+
+    public static void ecrireNonAutorise(HttpServletResponse reponse, boolean isApi) throws IOException {
+        ecrireAcces(reponse, HttpServletResponse.SC_UNAUTHORIZED,
+                "Authentification requise.", isApi);
+    }
+
+    public static void ecrireInterdit(HttpServletResponse reponse, boolean isApi) throws IOException {
+        ecrireAcces(reponse, HttpServletResponse.SC_FORBIDDEN,
+                "Rôle insuffisant pour accéder à cette ressource.", isApi);
+    }
+
+    private static void ecrireAcces(HttpServletResponse reponse, int statut, String message, boolean isApi)
+            throws IOException {
+        reponse.resetBuffer();
+        reponse.setStatus(statut);
+        reponse.setCharacterEncoding("UTF-8");
+        if (isApi) {
+            reponse.setContentType("application/json;charset=UTF-8");
+            reponse.getWriter().write("{\"status\":" + statut
+                    + ",\"error\":\"" + message.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}");
+        } else {
+            reponse.setContentType("text/html;charset=UTF-8");
+            reponse.getWriter().write("<!doctype html><html><head><meta charset=\"UTF-8\">");
+            reponse.getWriter().write("<title>Erreur " + statut + "</title></head><body>");
+            reponse.getWriter().write("<h1>Erreur " + statut + "</h1><p>" + message + "</p></body></html>");
+        }
+    }
 }

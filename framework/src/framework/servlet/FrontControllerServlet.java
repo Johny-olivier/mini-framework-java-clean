@@ -1,5 +1,6 @@
 package framework.servlet;
 
+import framework.annotation.Auth;
 import framework.annotation.ResponseBody;
 import framework.binding.MauvaisParametreException;
 import framework.binding.ResolveurArguments;
@@ -15,6 +16,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -80,6 +83,9 @@ public class FrontControllerServlet extends HttpServlet {
             return;
         }
 
+        if (!autoriser(route, requete, reponse)) {
+            return;
+        }
         invoquer(route, requete, reponse);
     }
 
@@ -121,6 +127,57 @@ public class FrontControllerServlet extends HttpServlet {
         if (resultat != null) {
             AssistantReponse.ecrireTexte(reponse, resultat.toString());
         }
+    }
+
+    private boolean autoriser(RouteInfo route, HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException {
+        Class<?> controleur = route.getController();
+        java.lang.reflect.Method methode = route.getMethod();
+
+        Auth auth = methode.getAnnotation(Auth.class);
+        if (auth == null) {
+            auth = (Auth) controleur.getAnnotation(Auth.class);
+        }
+        if (auth == null) {
+            return true;
+        }
+
+        boolean isApi = methode.isAnnotationPresent(ResponseBody.class)
+                || controleur.isAnnotationPresent(ResponseBody.class);
+
+        String attributRole = (String) getServletContext()
+                .getAttribute(InitialiseurApplication.ATTRIBUT_ROLE_SESSION);
+        if (attributRole == null || attributRole.isBlank()) {
+            attributRole = "role";
+        }
+
+        HttpSession session = requete.getSession(false);
+        Object roles = session == null ? null : session.getAttribute(attributRole);
+        if (roles == null) {
+            AssistantReponse.ecrireNonAutorise(reponse, isApi);
+            return false;
+        }
+
+        String roleRequis = auth.role().trim();
+        if (!roleRequis.isEmpty() && !possedeRole(roles, roleRequis)) {
+            AssistantReponse.ecrireInterdit(reponse, isApi);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean possedeRole(Object roles, String roleRequis) {
+        if (roles instanceof String) {
+            return roleRequis.equals(((String) roles).trim());
+        }
+        if (roles instanceof java.util.Collection<?>) {
+            for (Object role : (java.util.Collection<?>) roles) {
+                if (roleRequis.equals(String.valueOf(role).trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private String nommer(RouteInfo route) {

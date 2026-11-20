@@ -122,6 +122,29 @@ public ModelAndView envoyer(Employe employe, Fichier fichier, ServletContext con
 - Le `ServletContext` peut etre injecte pour lire la configuration de
   l'application (`WEB-INF/upload.properties` dans l'exemple).
 
+## Authentification (`@Auth`)
+
+```java
+@Mapping(url = "/prive")
+@Auth
+public String prive() {
+    return "Page privée";
+}
+
+@Mapping(url = "/admin")
+@Auth(role = "admin")
+public String admin() {
+    return "Page admin";
+}
+```
+
+- Annotation applicable sur une classe ou une methode (la methode est prioritaire).
+- Sans session authentifiee : HTTP 401 (JSON pour les routes `@ResponseBody`, HTML sinon).
+- Avec `role` renseigne et role manquant : HTTP 403.
+- Le nom de l'attribut de session contenant les roles est configure par le
+  context-param `authRoleSessionAttribute` (defaut `role`). Les roles peuvent
+  etre une `String` ou une `Collection`.
+
 ## Session HTTP
 
 Une methode de controleur recoit une `framework.session.FrameworkSession` :
@@ -160,6 +183,6 @@ public String compteur(FrameworkSession session) {
 | 7bis | Binding d'un objet | fait |
 | 8 | Upload de fichier | fait |
 | 9 | Session HTTP | fait |
-| 10 | Authentification `@Auth` | a venir |
+| 10 | Authentification `@Auth` | fait |
 | 10bis | Autorisation `@RoleRequired` | a venir |
 | 11 | Controleurs singleton | a venir |
