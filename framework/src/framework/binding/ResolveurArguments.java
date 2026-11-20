@@ -1,6 +1,7 @@
 package framework.binding;
 
 import framework.annotation.Param;
+import framework.session.FrameworkSession;
 import framework.upload.Fichier;
 import framework.utils.ConfigurationFramework;
 import jakarta.servlet.ServletException;
@@ -58,6 +59,9 @@ public class ResolveurArguments {
         if (type == Fichier.class) {
             return lireFichier(requete, nom);
         }
+        if (type == FrameworkSession.class) {
+            return new FrameworkSession(requete.getSession());
+        }
         if ("jakarta.servlet.ServletContext".equals(type.getName())) {
             return requete.getServletContext();
         }
@@ -101,6 +105,7 @@ public class ResolveurArguments {
     private boolean estObjetALier(Class<?> type) {
         return !Convertisseur.estSimple(type)
                 && type != Fichier.class
+                && type != FrameworkSession.class
                 && !"jakarta.servlet.ServletContext".equals(type.getName())
                 && !TYPES_CONTEXTE_SPRING.contains(type.getName());
     }

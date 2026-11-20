@@ -122,6 +122,27 @@ public ModelAndView envoyer(Employe employe, Fichier fichier, ServletContext con
 - Le `ServletContext` peut etre injecte pour lire la configuration de
   l'application (`WEB-INF/upload.properties` dans l'exemple).
 
+## Session HTTP
+
+Une methode de controleur recoit une `framework.session.FrameworkSession` :
+
+```java
+@Mapping(url = "/compteur")
+public String compteur(FrameworkSession session) {
+    Integer valeur = (Integer) session.getAttribute("compteur");
+    valeur = valeur == null ? 1 : valeur + 1;
+    session.setAttribute("compteur", valeur);
+    return "Compteur : " + valeur;
+}
+```
+
+- `setAttribute`, `getAttribute` (avec surcharge typee), `removeAttribute`,
+  `getAttributes` (copie), `clear`, `getId`.
+- La session reelle est toujours consultee : aucune copie locale.
+- `req.getSession()` est appele a l'injection : la session est creee si elle
+  n'existe pas.
+- Combine avec les parametres simples, les objets, les fichiers et Spring.
+
 ## Sprints
 
 | Sprint | Fonctionnalite | Etat |
@@ -138,7 +159,7 @@ public ModelAndView envoyer(Employe employe, Fichier fichier, ServletContext con
 | 7 | Binding des parametres simples | fait |
 | 7bis | Binding d'un objet | fait |
 | 8 | Upload de fichier | fait |
-| 9 | Session HTTP | a venir |
+| 9 | Session HTTP | fait |
 | 10 | Authentification `@Auth` | a venir |
 | 10bis | Autorisation `@RoleRequired` | a venir |
 | 11 | Controleurs singleton | a venir |
