@@ -56,6 +56,15 @@ contient_formulaire() {
     [[ "$corps" == *"$attendu"* ]] && echo 1 || echo 0
 }
 
+contient_cookie() {
+    local url="$1"
+    local attendu="$2"
+    local cookies="$3"
+    local corps
+    corps="$(curl -s -c "$cookies" -b "$cookies" "$url")"
+    [[ "$corps" == *"$attendu"* ]] && echo 1 || echo 0
+}
+
 arreter_tomcat() {
     if [ -f "$BASE/logs/catalina.out" ]; then
         CATALINA_HOME="$CATALINA_HOME" CATALINA_BASE="$BASE" \
@@ -216,6 +225,21 @@ if [ "$pret" = "1" ]; then
     SAUVEGARDE="$(find "$DOSSIER_UPLOAD" -type f 2>/dev/null | sort | sed -n '1p')"
     verifier "le contenu enregistré est identique à l'original" \
         "$(condition cmp -s "$FICHIER_TEST" "$SAUVEGARDE")"
+
+    echo
+    echo "== Session (sprint 9) =="
+    COOKIES="$TRAVAIL/session-cookies.txt"
+    rm -f "$COOKIES"
+    verifier "GET /compteur incrémente la session" \
+        "$(contient_cookie "$URL/compteur" "Compteur : 1" "$COOKIES")"
+    verifier "GET /compteur avec le même cookie donne 2" \
+        "$(contient_cookie "$URL/compteur" "Compteur : 2" "$COOKIES")"
+    verifier "GET /api/session renvoie les attributs en JSON" \
+        "$(contient_cookie "$URL/api/session" "\"compteur\":2" "$COOKIES")"
+    verifier "GET /reset vide la session" \
+        "$(contient_cookie "$URL/reset" "OK" "$COOKIES")"
+    verifier "GET /compteur repart à 1 après reset" \
+        "$(contient_cookie "$URL/compteur" "Compteur : 1" "$COOKIES")"
 
     echo
     echo "== Démarrage =="

@@ -21,6 +21,10 @@ public final class LanceurTests {
         System.out.println("== EcritureJson ==");
         EcritureJsonTest.executer();
 
+        System.out.println();
+        System.out.println("== FrameworkSession ==");
+        FrameworkSessionTest.executer();
+
         System.exit(Verificateur.bilan());
     }
 }
