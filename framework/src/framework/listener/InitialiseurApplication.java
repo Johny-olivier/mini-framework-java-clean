@@ -19,6 +19,7 @@ public class InitialiseurApplication implements ServletContextListener {
 
     public static final String ATTRIBUT_ROUTES = "framework.routes";
     public static final String ATTRIBUT_CONTROLEURS = "framework.controleurs";
+    public static final String ATTRIBUT_INSTANCES = "framework.controleurs.instances";
     public static final String ATTRIBUT_ROLE_SESSION = "framework.authRoleSessionAttribute";
 
     @Override
@@ -47,6 +48,24 @@ public class InitialiseurApplication implements ServletContextListener {
         List<Class<?>> controleurs = ControllerScanner.scan(cheminClasses, packages);
         RegistreRoutes registre = new RegistreRoutes();
         registre.enregistrerTout(controleurs);
+
+        java.util.Map<Class<?>, Object> instances = new java.util.concurrent.ConcurrentHashMap<>();
+        for (Class<?> controleur : controleurs) {
+            try {
+                var constructeur = controleur.getDeclaredConstructor();
+                constructeur.setAccessible(true);
+                instances.put(controleur, constructeur.newInstance());
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                java.lang.Throwable cause = e.getCause() == null ? e : e.getCause();
+                throw new IllegalStateException(
+                        "Impossible d'instancier le contrôleur " + controleur.getName() + " au démarrage.", cause);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException(
+                        "Impossible d'instancier le contrôleur " + controleur.getName()
+                        + " au démarrage. Un constructeur sans argument est requis.", e);
+            }
+        }
+        contexte.setAttribute(ATTRIBUT_INSTANCES, instances);
 
         // Sprint 5bis : Spring reste optionnel. Si un ContextLoaderListener a
         // déjà publié son contexte racine, on le republie sous un nom stable

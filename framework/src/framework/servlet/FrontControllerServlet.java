@@ -94,7 +94,7 @@ public class FrontControllerServlet extends HttpServlet {
             throws IOException, ServletException {
         Method methode = route.getMethod();
         try {
-            Object instance = route.getController().getDeclaredConstructor().newInstance();
+            Object instance = instanceControleur(route.getController());
             Object resultat = methode.invoke(instance, resolveur.resoudre(methode, requete));
             ecrireResultat(methode, resultat, requete, reponse);
         } catch (MauvaisParametreException e) {
@@ -203,6 +203,27 @@ public class FrontControllerServlet extends HttpServlet {
             }
         }
         return false;
+    }
+
+    private Object instanceControleur(Class<?> classe) {
+        Object instance = null;
+        java.util.Map<?, ?> instances = (java.util.Map<?, ?>) getServletContext()
+                .getAttribute(InitialiseurApplication.ATTRIBUT_INSTANCES);
+        if (instances != null) {
+            instance = instances.get(classe);
+        }
+        if (instance == null) {
+            // Repli si le listener n'a pas préparé les instances.
+            try {
+                var constructeur = classe.getDeclaredConstructor();
+                constructeur.setAccessible(true);
+                instance = constructeur.newInstance();
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException(
+                        "Impossible d'obtenir l'instance du contrôleur " + classe.getName(), e);
+            }
+        }
+        return instance;
     }
 
     private String nommer(RouteInfo route) {
