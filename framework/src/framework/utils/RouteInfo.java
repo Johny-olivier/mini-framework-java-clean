@@ -4,8 +4,8 @@ import java.lang.reflect.Method;
 
 public class RouteInfo {
 
-    private Class<?> controller;
-    private Method method;
+    private final Class<?> controller;
+    private final Method method;
 
     public RouteInfo(Class<?> controller, Method method) {
         this.controller = controller;

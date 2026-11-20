@@ -1,10 +1,22 @@
-find src -name "*.java" > sources.txt
+#!/bin/bash
+set -e
+
+cd "$(dirname "$0")"
+
+rm -rf build
+mkdir -p build
+
+find src -name "*.java" | sort > build/sources.txt
 
 javac \
+    -encoding UTF-8 \
+    -parameters \
     -cp lib/servlet-api.jar \
     -d build \
-    @sources.txt
+    @build/sources.txt
 
-rm sources.txt
+rm -f build/sources.txt
 
-cd build && jar -cf ../framework.jar framework/ && cd ..
+jar -cf framework.jar -C build .
+
+echo "framework.jar construit ($(find build -name '*.class' | wc -l) classes)."
