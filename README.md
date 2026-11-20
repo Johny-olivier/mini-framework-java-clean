@@ -56,6 +56,30 @@ demarrage.
 Le servlet est mappe sur `/` et non `/*` : avec `/*`, il intercepte aussi les
 JSP et les vues renvoient 404.
 
+## Binding des parametres
+
+Une methode de controleur recoit les champs du formulaire par leur nom :
+
+```java
+@Mapping(url = "/employe", method = "POST")
+public ModelAndView enregistrer(Employe employe) {
+    return new ModelAndView("employe-resultat");
+}
+```
+
+- Types simples : `String`, nombres, `boolean`, `char`, enums. `@Param("nom")`
+  impose le nom du champ quand il differe du nom Java.
+- Objet : le framework appelle le constructeur sans argument puis les setters.
+  Les champs `nom`, `poste`, `salaire` remplissent directement l'objet.
+- Objet imbrique : notation `adresse.rue`, `adresse.ville`.
+- Plusieurs objets dans la meme methode : utiliser le prefixe
+  `nomParametre.propriete` (`employe.nom`, `poste.libelle`) pour lever
+  l'ambiguite.
+- Une valeur numerique invalide renvoie HTTP 400.
+
+La compilation doit conserver les noms de parametres (`-parameters`), sinon
+`@Param` devient obligatoire.
+
 ## Sprints
 
 | Sprint | Fonctionnalite | Etat |
@@ -70,7 +94,7 @@ JSP et les vues renvoient 404.
 | 5bis | Conteneur Spring | a venir |
 | 6 | `@ResponseBody` et reponse JSON | fait |
 | 7 | Binding des parametres simples | fait |
-| 7bis | Binding d'un objet | a venir |
+| 7bis | Binding d'un objet | fait |
 | 8 | Upload de fichier | a venir |
 | 9 | Session HTTP | a venir |
 | 10 | Authentification `@Auth` | a venir |

@@ -24,7 +24,7 @@ public final class AssistantReponse {
     public static void ecrireJson(HttpServletResponse reponse, Object valeur) throws IOException {
         reponse.setContentType("application/json;charset=UTF-8");
         PrintWriter writer = reponse.getWriter();
-        writer.println(FrameworkUtils.toJson(valeur));
+        writer.println(EcritureJson.ecrire(valeur));
     }
 
     public static void ecrireNonTrouve(HttpServletResponse reponse, RegistreRoutes registre, String chemin)
