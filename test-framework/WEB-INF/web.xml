@@ -6,6 +6,11 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
+    <context-param>
+        <param-name>authRoleSessionAttribute</param-name>
+        <param-value>role</param-value>
+    </context-param>
+
     <!-- Sprint 5bis : conteneur Spring unique pour les services et repositories. -->
     <context-param>
         <param-name>contextClass</param-name>

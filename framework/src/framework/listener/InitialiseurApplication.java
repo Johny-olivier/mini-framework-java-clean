@@ -19,6 +19,7 @@ public class InitialiseurApplication implements ServletContextListener {
 
     public static final String ATTRIBUT_ROUTES = "framework.routes";
     public static final String ATTRIBUT_CONTROLEURS = "framework.controleurs";
+    public static final String ATTRIBUT_ROLE_SESSION = "framework.authRoleSessionAttribute";
 
     @Override
     public void contextInitialized(ServletContextEvent evenement) {
@@ -53,6 +54,12 @@ public class InitialiseurApplication implements ServletContextListener {
         // continue de fonctionner sans Spring.
         contexte.setAttribute(ConfigurationFramework.CONTEXTE_SPRING,
                 contexte.getAttribute(ConfigurationFramework.RACINE_SPRING));
+
+        String attributRole = contexte.getInitParameter("authRoleSessionAttribute");
+        if (attributRole == null || attributRole.trim().isEmpty()) {
+            attributRole = "role";
+        }
+        contexte.setAttribute(ATTRIBUT_ROLE_SESSION, attributRole.trim());
 
         contexte.setAttribute(ATTRIBUT_CONTROLEURS, controleurs);
         contexte.setAttribute(ATTRIBUT_ROUTES, registre);
