@@ -1,6 +1,7 @@
 package testframework.controllers;
 
 import framework.annotation.Auth;
+import framework.annotation.RoleRequired;
 import framework.annotation.Controller;
 import framework.annotation.Mapping;
 import framework.annotation.ResponseBody;
@@ -36,6 +37,21 @@ public class AuthController {
     @Auth(role = "admin")
     public String admin() {
         return "Page admin";
+    }
+
+    @Mapping(url = "/rh")
+    @RoleRequired({"admin", "RH"})
+    public String espaceRh() {
+        return "Espace RH";
+    }
+
+    @Mapping(url = "/api/rh")
+    @RoleRequired({"admin", "RH"})
+    @ResponseBody
+    public Map<String, Object> apiRh() {
+        Map<String, Object> resultat = new LinkedHashMap<>();
+        resultat.put("message", "accès RH");
+        return resultat;
     }
 
     @Mapping(url = "/auth/login")

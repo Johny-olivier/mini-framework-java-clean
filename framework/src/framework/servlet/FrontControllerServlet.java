@@ -1,6 +1,7 @@
 package framework.servlet;
 
 import framework.annotation.Auth;
+import framework.annotation.RoleRequired;
 import framework.annotation.ResponseBody;
 import framework.binding.MauvaisParametreException;
 import framework.binding.ResolveurArguments;
@@ -138,7 +139,11 @@ public class FrontControllerServlet extends HttpServlet {
         if (auth == null) {
             auth = (Auth) controleur.getAnnotation(Auth.class);
         }
-        if (auth == null) {
+        RoleRequired roleRequired = methode.getAnnotation(RoleRequired.class);
+        if (roleRequired == null) {
+            roleRequired = (RoleRequired) controleur.getAnnotation(RoleRequired.class);
+        }
+        if (auth == null && roleRequired == null) {
             return true;
         }
 
@@ -158,12 +163,32 @@ public class FrontControllerServlet extends HttpServlet {
             return false;
         }
 
-        String roleRequis = auth.role().trim();
-        if (!roleRequis.isEmpty() && !possedeRole(roles, roleRequis)) {
-            AssistantReponse.ecrireInterdit(reponse, isApi);
-            return false;
+        if (auth != null) {
+            String roleRequis = auth.role().trim();
+            if (!roleRequis.isEmpty() && !possedeRole(roles, roleRequis)) {
+                AssistantReponse.ecrireInterdit(reponse, isApi);
+                return false;
+            }
+        }
+
+        if (roleRequired != null) {
+            String[] rolesRequis = roleRequired.value();
+            if (!possedeUnDesRoles(roles, rolesRequis)) {
+                AssistantReponse.ecrireInterdit(reponse, isApi);
+                return false;
+            }
         }
         return true;
+    }
+
+    private boolean possedeUnDesRoles(Object roles, String[] rolesRequis) {
+        for (String roleRequis : rolesRequis) {
+            if (roleRequis != null && !roleRequis.trim().isEmpty()
+                    && possedeRole(roles, roleRequis.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean possedeRole(Object roles, String roleRequis) {
