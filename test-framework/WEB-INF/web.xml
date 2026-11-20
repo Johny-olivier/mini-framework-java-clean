@@ -6,6 +6,11 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
+    <!-- Sprint 4 : les contrôleurs et les routes sont construits au démarrage. -->
+    <listener>
+        <listener-class>framework.listener.InitialiseurApplication</listener-class>
+    </listener>
+
     <servlet>
         <servlet-name>FrontController</servlet-name>
 
@@ -14,12 +19,12 @@
         </servlet-class>
 
         <init-param>
-        <param-name>controller-package</param-name>
-        <param-value>
-            testframework.controllers,
-            testframework.api.controllers
-        </param-value>
-    </init-param>
+            <param-name>controller-package</param-name>
+            <param-value>
+                testframework.controllers,
+                testframework.api.controllers
+            </param-value>
+        </init-param>
 
         <init-param>
             <param-name>view-prefix</param-name>
@@ -33,9 +38,14 @@
 
     </servlet>
 
+    <!--
+        Mapping "/" et non "/*" : avec "/*", le FrontController intercepte
+        aussi les JSP et la vue /bienvenue renvoie 404. Avec "/", le servlet
+        traite toutes les URLs applicatives et le servlet JSP garde *.jsp.
+    -->
     <servlet-mapping>
         <servlet-name>FrontController</servlet-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/</url-pattern>
     </servlet-mapping>
 
 </web-app>

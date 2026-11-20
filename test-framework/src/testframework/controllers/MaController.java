@@ -47,4 +47,9 @@ public class MaController {
         return "Recherche " + q + " page " + page;
     }
 
+    @Mapping(url = "/boom")
+    public String boom() {
+        throw new IllegalStateException("Erreur volontaire pour tester le code 500.");
+    }
+
 }

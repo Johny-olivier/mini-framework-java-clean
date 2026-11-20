@@ -3,6 +3,7 @@ package framework.scanner;
 import framework.annotation.Controller;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ControllerScanner {
@@ -20,7 +21,10 @@ public class ControllerScanner {
 
     private static void scanDirectory(File root, File current, String[] packages, List<Class<?>> controllers) {
         File[] files = current.listFiles();
-        if (files == null) return;
+        if (files == null) {
+            return;
+        }
+        Arrays.sort(files);
 
         for (File file : files) {
             if (file.isDirectory()) {
@@ -33,14 +37,7 @@ public class ControllerScanner {
                             .replace(".class", "");
 
                     Class<?> clazz = Class.forName(className);
-                    boolean startsWithPackage = false;
-                    for (String pkg : packages) {
-                        if (clazz.getName().startsWith(pkg.trim())) {
-                            startsWithPackage = true;
-                            break;
-                        }
-                    }
-                    if (startsWithPackage && clazz.isAnnotationPresent(Controller.class)) {
+                    if (appartientAuxPackages(clazz, packages) && clazz.isAnnotationPresent(Controller.class)) {
                         controllers.add(clazz);
                     }
                 } catch (Exception e) {
@@ -49,5 +46,18 @@ public class ControllerScanner {
                 }
             }
         }
+    }
+
+    private static boolean appartientAuxPackages(Class<?> clazz, String[] packages) {
+        for (String pkg : packages) {
+            String prefixe = pkg.trim();
+            if (prefixe.isEmpty()) {
+                continue;
+            }
+            if (clazz.getName().equals(prefixe) || clazz.getName().startsWith(prefixe + ".")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

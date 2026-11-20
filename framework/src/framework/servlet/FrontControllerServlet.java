@@ -1,165 +1,118 @@
 package framework.servlet;
 
-import framework.annotation.Mapping;
-import framework.annotation.Param;
 import framework.annotation.ResponseBody;
-import framework.scanner.ControllerScanner;
-import framework.utils.FrameworkUtils;
+import framework.binding.MauvaisParametreException;
+import framework.binding.ResolveurArguments;
+import framework.listener.InitialiseurApplication;
+import framework.utils.AssistantReponse;
+import framework.utils.Chemins;
+import framework.utils.ConfigurationFramework;
+import framework.utils.RegistreRoutes;
 import framework.utils.RouteInfo;
 import framework.web.ModelAndView;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class FrontControllerServlet extends HttpServlet {
 
-    private List<Class<?>> controllers;
-    private Map<String, RouteInfo> routes;
-    private String viewPrefix = "";
-    private String viewSuffix = "";
+    private RegistreRoutes registre;
+    private final ResolveurArguments resolveur = new ResolveurArguments();
+    private String prefixeVues = "";
+    private String suffixeVues = "";
 
     @Override
-    public void init() {
-        String classesPath = getServletContext().getRealPath("/WEB-INF/classes");
-        String controllerPackage = getServletConfig().getInitParameter("controller-package");
-        controllers = ControllerScanner.scan(classesPath, controllerPackage);
-        String prefix = getServletConfig().getInitParameter("view-prefix");
-        String suffix = getServletConfig().getInitParameter("view-suffix");
-        if (prefix != null) {
-            viewPrefix = prefix;
-        }
-        if (suffix != null) {
-            viewSuffix = suffix;
-        }
-        routes = new HashMap<>();
-        for (Class<?> controller : controllers) {
-            for (Method method : controller.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Mapping.class)) {
-                    Mapping mapping = method.getAnnotation(Mapping.class);
-                    routes.put(mapping.method() + ":" + mapping.url(), new RouteInfo(controller, method));
-                }
-            }
+    public void init() throws ServletException {
+        ServletContext contexte = getServletContext();
+        prefixeVues = ConfigurationFramework.lire(contexte, ConfigurationFramework.PREFIXE_VUES, "");
+        suffixeVues = ConfigurationFramework.lire(contexte, ConfigurationFramework.SUFFIXE_VUES, "");
+
+        registre = (RegistreRoutes) contexte.getAttribute(InitialiseurApplication.ATTRIBUT_ROUTES);
+        if (registre == null) {
+            // Repli : le listener n'est pas déclaré dans web.xml.
+            contexte.log("Framework : listener absent, initialisation des routes dans le servlet.");
+            registre = InitialiseurApplication.initialiser(contexte);
         }
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        processController(request, response);
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        traiter(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        processController(request, response);
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        traiter(request, response);
     }
 
-    private void processController(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        response.setContentType("text/plain;charset=UTF-8");
-        var writer = response.getWriter();
+    private void traiter(HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException, ServletException {
+        String chemin = Chemins.depuisRequete(requete);
+        RouteInfo route = registre.trouver(requete.getMethod(), chemin);
 
-        String requestUri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-        String path = requestUri.substring(contextPath.length());
-
-        Class<?> matchedController = null;
-        Method matchedMethod = null;
-
-        RouteInfo route = routes.get(request.getMethod() + ":" + path);
-        if (route != null) {
-            matchedController = route.getController();
-            matchedMethod = route.getMethod();
+        if (route == null) {
+            Set<String> methodes = registre.methodesAutorisees(chemin);
+            if (methodes.isEmpty()) {
+                AssistantReponse.ecrireNonTrouve(reponse, registre, chemin);
+            } else {
+                AssistantReponse.ecrireMethodeNonAutorisee(reponse, chemin, methodes);
+            }
+            return;
         }
 
-        if (matchedMethod != null) {
-            try {
-                Object instance = matchedController.getDeclaredConstructor().newInstance();
-                Object result = matchedMethod.invoke(instance, buildArgs(matchedMethod, request));
-                if (matchedMethod.isAnnotationPresent(ResponseBody.class)) {
-                    response.setContentType("application/json;charset=UTF-8");
-                    writer.println(FrameworkUtils.toJson(result));
-                    return;
-                }
-                if (result instanceof ModelAndView) {
-                    ModelAndView mv = (ModelAndView) result;
-                    for (Map.Entry<String, Object> entry : mv.getAttributes().entrySet()) {
-                        request.setAttribute(entry.getKey(), entry.getValue());
-                    }
-                    request.getRequestDispatcher(viewPrefix + mv.getUrl() + viewSuffix).forward(request, response);
-                    return;
-                }
-                if (result instanceof String) {
-                    writer.println((String) result);
-                } else if (result != null) {
-                    writer.println(result.toString());
-                }
-            } catch (Exception e) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur appel " + matchedMethod.getName());
-                return;
-            }
-        } else {
-            boolean urlExiste = false;
-            for (String key : routes.keySet()) {
-                if (key.endsWith(":" + path)) {
-                    urlExiste = true;
-                    break;
-                }
-            }
-            if (urlExiste) {
-                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                writer.println("Verbe HTTP non accepte pour " + path + ".");
-                writer.println("Utilisez un autre verbe.");
-                return;
-            }
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            writer.println("Aucune méthode ne correspond.");
-            writer.println();
-            writer.println("Controllers détectés :");
-            writer.println();
+        invoquer(route, requete, reponse);
+    }
 
-            for (Map.Entry<String, RouteInfo> entry : routes.entrySet()) {
-                RouteInfo info = entry.getValue();
-                writer.println(info.getController().getSimpleName());
-                writer.println("    - " + entry.getKey() + "  -> " + info.getMethod().getName() + "()");
-            }
+    private void invoquer(RouteInfo route, HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException, ServletException {
+        Method methode = route.getMethod();
+        try {
+            Object instance = route.getController().getDeclaredConstructor().newInstance();
+            Object resultat = methode.invoke(instance, resolveur.resoudre(methode, requete));
+            ecrireResultat(methode, resultat, requete, reponse);
+        } catch (MauvaisParametreException e) {
+            AssistantReponse.ecrireRequeteInvalide(reponse, e.getMessage());
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause() == null ? e : e.getCause();
+            getServletContext().log("Erreur dans " + nommer(route), cause);
+            AssistantReponse.ecrireErreurInterne(reponse);
+        } catch (ReflectiveOperationException e) {
+            getServletContext().log("Impossible d'invoquer " + nommer(route), e);
+            AssistantReponse.ecrireErreurInterne(reponse);
         }
     }
 
-    private Object[] buildArgs(Method method, HttpServletRequest request) {
-        Parameter[] params = method.getParameters();
-        Object[] args = new Object[params.length];
-        for (int i = 0; i < params.length; i++) {
-            Param param = params[i].getAnnotation(Param.class);
-            String name = params[i].getName();
-            if (param != null) {
-                name = param.value();
-            }
-            args[i] = convert(request.getParameter(name), params[i].getType());
+    private void ecrireResultat(Method methode, Object resultat, HttpServletRequest requete,
+            HttpServletResponse reponse) throws IOException, ServletException {
+        if (methode.isAnnotationPresent(ResponseBody.class)) {
+            AssistantReponse.ecrireJson(reponse, resultat);
+            return;
         }
-        return args;
+
+        if (resultat instanceof ModelAndView) {
+            ModelAndView vue = (ModelAndView) resultat;
+            for (Map.Entry<String, Object> attribut : vue.getAttributes().entrySet()) {
+                requete.setAttribute(attribut.getKey(), attribut.getValue());
+            }
+            requete.getRequestDispatcher(prefixeVues + vue.getUrl() + suffixeVues).forward(requete, reponse);
+            return;
+        }
+
+        if (resultat != null) {
+            AssistantReponse.ecrireTexte(reponse, resultat.toString());
+        }
     }
 
-    private Object convert(String value, Class<?> type) {
-        if (type == String.class) {
-            return value;
-        }
-        if (type == int.class || type == Integer.class) {
-            return value == null ? 0 : Integer.parseInt(value);
-        }
-        if (type == long.class || type == Long.class) {
-            return value == null ? 0L : Long.parseLong(value);
-        }
-        if (type == double.class || type == Double.class) {
-            return value == null ? 0.0 : Double.parseDouble(value);
-        }
-        if (type == boolean.class || type == Boolean.class) {
-            return value != null && Boolean.parseBoolean(value);
-        }
-        return value;
+    private String nommer(RouteInfo route) {
+        return route.getController().getName() + "#" + route.getMethod().getName();
     }
 }

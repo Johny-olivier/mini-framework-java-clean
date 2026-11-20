@@ -3,12 +3,15 @@
 *.class
 
 /build/
+build-test/
 
 framework/build/
+framework/build-test/
 framework/framework.jar
 
 test-framework/build/
 test-framework/*.war
+test-framework/WEB-INF/lib/framework.jar
 
 .vscode/
 
