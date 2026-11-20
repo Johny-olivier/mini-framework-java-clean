@@ -171,6 +171,17 @@ if [ "$pret" = "1" ]; then
         "$([ "$(code_http -X POST --data-urlencode "salaire=abc" "$URL/api/employe")" = "400" ] && echo 1 || echo 0)"
 
     echo
+    echo "== Spring (sprint 5bis) =="
+    verifier "GET /spring?nom=Johny appelle le service Spring" \
+        "$(contient "$URL/spring?nom=Johny" "Bonjour Johny")"
+    verifier "GET /spring sans nom utilise la valeur par défaut" \
+        "$(contient "$URL/spring" "Bonjour inconnu")"
+    verifier "GET /spring/contexte reçoit le WebApplicationContext" \
+        "$(contient "$URL/spring/contexte" "Contexte Spring :")"
+    verifier "le listener publie le contexte Spring" \
+        "$(condition grep -rq 'Contexte Spring publié' "$BASE/logs")"
+
+    echo
     echo "== Démarrage =="
     verifier "le listener a initialisé les routes" \
         "$(condition grep -rq 'route(s) initialisés au démarrage' "$BASE/logs")"

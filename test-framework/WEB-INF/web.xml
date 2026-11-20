@@ -6,6 +6,25 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
          version="5.0">
 
+    <!-- Sprint 5bis : conteneur Spring unique pour les services et repositories. -->
+    <context-param>
+        <param-name>contextClass</param-name>
+        <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>testframework.config.ConfigurationApplication</param-value>
+    </context-param>
+
+    <!--
+        ContextLoaderListener doit précéder InitialiseurApplication : notre
+        listener republie le contexte racine de Spring sous "springContext".
+    -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
     <!-- Sprint 4 : les contrôleurs et les routes sont construits au démarrage. -->
     <listener>
         <listener-class>framework.listener.InitialiseurApplication</listener-class>

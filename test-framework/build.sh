@@ -6,6 +6,8 @@ cd "$(dirname "$0")"
 RACINE="$(cd .. && pwd)"
 CATALINA_HOME="${CATALINA_HOME:-/opt/tomcat/apache-tomcat-10.0.16}"
 
+./telecharger-spring.sh
+
 "$RACINE/framework/compile.sh"
 
 BUILD="build"
@@ -26,7 +28,7 @@ find src -name "*.java" | sort > sources.txt
 javac \
     -encoding UTF-8 \
     -parameters \
-    -cp "$BUILD/WEB-INF/lib/framework.jar:$CATALINA_HOME/lib/servlet-api.jar" \
+    -cp "$BUILD/WEB-INF/lib/*:$CATALINA_HOME/lib/servlet-api.jar" \
     -d "$BUILD/WEB-INF/classes" \
     @sources.txt
 

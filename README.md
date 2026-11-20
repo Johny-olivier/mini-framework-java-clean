@@ -80,6 +80,28 @@ public ModelAndView enregistrer(Employe employe) {
 La compilation doit conserver les noms de parametres (`-parameters`), sinon
 `@Param` devient obligatoire.
 
+## Integration Spring (optionnelle)
+
+Le framework n'a **aucune dependance de compilation** envers Spring. Si
+l'application declare `ContextLoaderListener` **avant** `InitialiseurApplication`
+dans `web.xml`, le listener republie le contexte racine sous l'attribut
+`springContext`. Une methode de controleur peut alors demander un
+`ApplicationContext` ou un `WebApplicationContext` :
+
+```java
+@Mapping(url = "/spring")
+public String salutation(ApplicationContext contexte, @Param("nom") String nom) {
+    return contexte.getBean(ServiceSalutation.class).saluer(nom);
+}
+```
+
+Sans Spring, le framework continue de fonctionner ; seul un controleur qui
+demande explicitement le contexte echoue avec un message clair.
+
+Les jars Spring de l'application de test sont telecharges par
+`test-framework/telecharger-spring.sh` (depuis `~/.m2` s'ils existent, sinon
+depuis Maven Central) et ne sont pas versionnes.
+
 ## Sprints
 
 | Sprint | Fonctionnalite | Etat |
@@ -91,7 +113,7 @@ La compilation doit conserver les noms de parametres (`-parameters`), sinon
 | 3bis | Execution de la methode appelee | fait |
 | 4 | Initialisation des routes au demarrage | fait |
 | 5 | `ModelAndView` et prefixe/suffixe des vues | fait |
-| 5bis | Conteneur Spring | a venir |
+| 5bis | Conteneur Spring | fait |
 | 6 | `@ResponseBody` et reponse JSON | fait |
 | 7 | Binding des parametres simples | fait |
 | 7bis | Binding d'un objet | fait |
