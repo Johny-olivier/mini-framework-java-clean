@@ -274,6 +274,28 @@ if [ "$pret" = "1" ]; then
         "$(contient_cookie "$URL/admin" "Page admin" "$COOKIES_AUTH")"
 
     echo
+    echo "== Rôles (sprint 10bis) =="
+    rm -f "$COOKIES_AUTH"
+    curl -s -c "$COOKIES_AUTH" -b "$COOKIES_AUTH" "$URL/auth/login?role=user" >/dev/null
+    if [ "$(code_http -b "$COOKIES_AUTH" "$URL/rh")" = "403" ]; then
+        verifier "route RH avec rôle user renvoie 403" "1"
+    else
+        verifier "route RH avec rôle user renvoie 403" "0"
+    fi
+
+    rm -f "$COOKIES_AUTH"
+    curl -s -c "$COOKIES_AUTH" -b "$COOKIES_AUTH" "$URL/auth/login?role=RH" >/dev/null
+    verifier "route RH avec rôle RH renvoie 200" \
+        "$([ "$(code_http -b "$COOKIES_AUTH" "$URL/rh")" = "200" ] && echo 1 || echo 0)"
+    verifier "route RH avec rôle RH contient le contenu" \
+        "$(contient_cookie "$URL/rh" "Espace RH" "$COOKIES_AUTH")"
+
+    rm -f "$COOKIES_AUTH"
+    curl -s -c "$COOKIES_AUTH" -b "$COOKIES_AUTH" "$URL/auth/login?role=admin" >/dev/null
+    verifier "route RH avec rôle admin renvoie 200" \
+        "$([ "$(code_http -b "$COOKIES_AUTH" "$URL/rh")" = "200" ] && echo 1 || echo 0)"
+
+    echo
     echo "== Démarrage =="
     verifier "le listener a initialisé les routes" \
         "$(condition grep -rq 'route(s) initialisés au démarrage' "$BASE/logs")"

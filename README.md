@@ -145,6 +145,21 @@ public String admin() {
   context-param `authRoleSessionAttribute` (defaut `role`). Les roles peuvent
   etre une `String` ou une `Collection`.
 
+## Autorisation (`@RoleRequired`)
+
+```java
+@Mapping(url = "/rh")
+@RoleRequired({"admin", "RH"})
+public String espaceRh() {
+    return "Espace RH";
+}
+```
+
+- Annotation applicable sur une classe ou une methode.
+- L'utilisateur doit etre authentifie (sinon 401) et posseder au moins un
+  des roles listes (sinon 403).
+- Combine avec `@Auth` si besoin.
+
 ## Session HTTP
 
 Une methode de controleur recoit une `framework.session.FrameworkSession` :
@@ -184,5 +199,5 @@ public String compteur(FrameworkSession session) {
 | 8 | Upload de fichier | fait |
 | 9 | Session HTTP | fait |
 | 10 | Authentification `@Auth` | fait |
-| 10bis | Autorisation `@RoleRequired` | a venir |
+| 10bis | Autorisation `@RoleRequired` | fait |
 | 11 | Controleurs singleton | a venir |
