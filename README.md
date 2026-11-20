@@ -102,6 +102,26 @@ Les jars Spring de l'application de test sont telecharges par
 `test-framework/telecharger-spring.sh` (depuis `~/.m2` s'ils existent, sinon
 depuis Maven Central) et ne sont pas versionnes.
 
+## Upload de fichier
+
+Le servlet porte `@MultipartConfig` (10 Mo par fichier, 12 Mo par requete).
+Une methode de controleur recoit un `framework.upload.Fichier` :
+
+```java
+@Mapping(url = "/upload", method = "POST")
+public ModelAndView envoyer(Employe employe, Fichier fichier, ServletContext contexte)
+        throws IOException {
+    ...
+}
+```
+
+- Le formulaire doit utiliser `enctype="multipart/form-data"`.
+- Les champs texte sont replies normalement en meme temps que le fichier.
+- `Fichier` expose `nom`, `typeContenu`, `taille` et `contenu` (`byte[]`).
+- Si aucun fichier n'est selectionne, le parametre vaut `null`.
+- Le `ServletContext` peut etre injecte pour lire la configuration de
+  l'application (`WEB-INF/upload.properties` dans l'exemple).
+
 ## Sprints
 
 | Sprint | Fonctionnalite | Etat |
@@ -117,7 +137,7 @@ depuis Maven Central) et ne sont pas versionnes.
 | 6 | `@ResponseBody` et reponse JSON | fait |
 | 7 | Binding des parametres simples | fait |
 | 7bis | Binding d'un objet | fait |
-| 8 | Upload de fichier | a venir |
+| 8 | Upload de fichier | fait |
 | 9 | Session HTTP | a venir |
 | 10 | Authentification `@Auth` | a venir |
 | 10bis | Autorisation `@RoleRequired` | a venir |

@@ -182,6 +182,42 @@ if [ "$pret" = "1" ]; then
         "$(condition grep -rq 'Contexte Spring publié' "$BASE/logs")"
 
     echo
+    echo "== Upload (sprint 8) =="
+    FICHIER_TEST="$TRAVAIL/fichier-test.txt"
+    printf 'contenu de test sprint 8\n' > "$FICHIER_TEST"
+    TAILLE_FICHIER="$(wc -c < "$FICHIER_TEST" | tr -d ' ')"
+
+    verifier "GET /upload affiche le formulaire" "$(contient "$URL/upload" "Envoyer un fichier")"
+    verifier "POST /upload reçoit le fichier et les champs texte" \
+        "$(contient_formulaire "$URL/upload" "fichier-test.txt" -F "nom=Johny" \
+            -F "poste=Developpeur" -F "fichier=@$FICHIER_TEST;type=text/plain")"
+    verifier "POST /upload expose le type de contenu" \
+        "$(contient_formulaire "$URL/upload" "text/plain" -F "nom=Johny" \
+            -F "fichier=@$FICHIER_TEST;type=text/plain")"
+    verifier "POST /upload expose la taille" \
+        "$(contient_formulaire "$URL/upload" "$TAILLE_FICHIER" -F "nom=Johny" \
+            -F "fichier=@$FICHIER_TEST;type=text/plain")"
+    verifier "POST /api/upload renvoie les métadonnées JSON" \
+        "$(contient_formulaire "$URL/api/upload" "\"nom\":\"fichier-test.txt\"" -F "nom=Johny" \
+            -F "fichier=@$FICHIER_TEST;type=text/plain")"
+    verifier "POST /api/upload accepte l'absence de fichier" \
+        "$(contient_formulaire "$URL/api/upload" "\"fichier\":null" -F "nom=Johny")"
+    verifier "POST /upload sans fichier reste valide" \
+        "$(contient_formulaire "$URL/upload" "aucun fichier" -F "nom=Johny")"
+
+    DOSSIER_UPLOAD="$CIBLE_WEBAPPS/$CONTEXTE/uploads"
+    AVANT="$(find "$DOSSIER_UPLOAD" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    contient_formulaire "$URL/upload" "fichier-test" -F "nom=Johny" \
+        -F "fichier=@$FICHIER_TEST;type=text/plain" >/dev/null
+    APRES="$(find "$DOSSIER_UPLOAD" -type f 2>/dev/null | wc -l | tr -d ' ')"
+    verifier "un nouvel envoi crée un fichier supplémentaire sans écrasement" \
+        "$([ "$APRES" -eq $((AVANT + 1)) ] && echo 1 || echo 0)"
+
+    SAUVEGARDE="$(find "$DOSSIER_UPLOAD" -type f 2>/dev/null | sort | sed -n '1p')"
+    verifier "le contenu enregistré est identique à l'original" \
+        "$(condition cmp -s "$FICHIER_TEST" "$SAUVEGARDE")"
+
+    echo
     echo "== Démarrage =="
     verifier "le listener a initialisé les routes" \
         "$(condition grep -rq 'route(s) initialisés au démarrage' "$BASE/logs")"
