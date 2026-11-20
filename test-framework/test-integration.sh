@@ -296,6 +296,13 @@ if [ "$pret" = "1" ]; then
         "$([ "$(code_http -b "$COOKIES_AUTH" "$URL/rh")" = "200" ] && echo 1 || echo 0)"
 
     echo
+    echo "== Singleton (sprint 11) =="
+    verifier "première requête singleton renvoie 1" \
+        "$(contient "$URL/singleton" "Singleton : 1")"
+    verifier "deuxième requête singleton renvoie 2 (même instance)" \
+        "$(contient "$URL/singleton" "Singleton : 2")"
+
+    echo
     echo "== Démarrage =="
     verifier "le listener a initialisé les routes" \
         "$(condition grep -rq 'route(s) initialisés au démarrage' "$BASE/logs")"

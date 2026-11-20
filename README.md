@@ -200,4 +200,4 @@ public String compteur(FrameworkSession session) {
 | 9 | Session HTTP | fait |
 | 10 | Authentification `@Auth` | fait |
 | 10bis | Autorisation `@RoleRequired` | fait |
-| 11 | Controleurs singleton | a venir |
+| 11 | Controleurs singleton | fait |
