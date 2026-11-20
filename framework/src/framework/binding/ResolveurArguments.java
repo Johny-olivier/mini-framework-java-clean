@@ -1,12 +1,17 @@
 package framework.binding;
 
 import framework.annotation.Param;
+import framework.upload.Fichier;
 import framework.utils.ConfigurationFramework;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -50,6 +55,12 @@ public class ResolveurArguments {
         String nom = annotation != null ? annotation.value() : parametre.getName();
         Class<?> type = parametre.getType();
 
+        if (type == Fichier.class) {
+            return lireFichier(requete, nom);
+        }
+        if ("jakarta.servlet.ServletContext".equals(type.getName())) {
+            return requete.getServletContext();
+        }
         if (TYPES_CONTEXTE_SPRING.contains(type.getName())) {
             return contexteSpring(requete, type);
         }
@@ -80,11 +91,58 @@ public class ResolveurArguments {
     private int compterObjets(Parameter[] parametres) {
         int total = 0;
         for (Parameter parametre : parametres) {
-            if (!Convertisseur.estSimple(parametre.getType())) {
+            if (estObjetALier(parametre.getType())) {
                 total++;
             }
         }
         return total;
+    }
+
+    private boolean estObjetALier(Class<?> type) {
+        return !Convertisseur.estSimple(type)
+                && type != Fichier.class
+                && !"jakarta.servlet.ServletContext".equals(type.getName())
+                && !TYPES_CONTEXTE_SPRING.contains(type.getName());
+    }
+
+    /**
+     * Sprint 8 : un paramètre de type Fichier reçoit la Part du formulaire.
+     * Renvoie null lorsqu'aucun fichier n'est envoyé.
+     */
+    private Fichier lireFichier(HttpServletRequest requete, String nom) {
+        String typeRequete = requete.getContentType();
+        if (typeRequete == null || !typeRequete.toLowerCase().startsWith("multipart/")) {
+            return null;
+        }
+        try {
+            Part part = requete.getPart(nom);
+            if (part == null) {
+                return null;
+            }
+            String nomEnvoye = part.getSubmittedFileName();
+            if (nomEnvoye == null || nomEnvoye.isBlank()) {
+                return null;
+            }
+            Fichier fichier = new Fichier();
+            fichier.setNom(nomSecurise(nomEnvoye));
+            fichier.setTypeContenu(part.getContentType());
+            fichier.setTaille(part.getSize());
+            try (InputStream entree = part.getInputStream()) {
+                fichier.setContenu(entree.readAllBytes());
+            }
+            return fichier;
+        } catch (IllegalStateException e) {
+            throw new MauvaisParametreException(
+                    "Fichier trop volumineux ou requête multipart invalide : " + nom + ".");
+        } catch (IOException | ServletException e) {
+            throw new MauvaisParametreException("Impossible de lire le fichier " + nom + ".");
+        }
+    }
+
+    private String nomSecurise(String nom) {
+        String base = nom.replace('\\', '/');
+        base = base.substring(base.lastIndexOf('/') + 1).trim();
+        return base.isEmpty() ? "fichier" : base;
     }
 
     /**

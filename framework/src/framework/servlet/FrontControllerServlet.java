@@ -12,6 +12,7 @@ import framework.utils.RouteInfo;
 import framework.web.ModelAndView;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +22,16 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Point d'entrée unique des requêtes applicatives.
+ *
+ * Sprint 8 : @MultipartConfig active la lecture des formulaires multipart
+ * (champs texte + fichiers) sans changer le chemin des requêtes classiques.
+ */
+@MultipartConfig(
+        fileSizeThreshold = 1024 * 1024,
+        maxFileSize = 10L * 1024 * 1024,
+        maxRequestSize = 12L * 1024 * 1024)
 public class FrontControllerServlet extends HttpServlet {
 
     private RegistreRoutes registre;
